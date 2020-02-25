@@ -111,10 +111,6 @@ class ProcessLoginTask extends AsyncTask{
 	}
 
 	/**
-	 * @param string      $jwt
-	 * @param null|string $currentPublicKey
-	 * @param bool        $first
-	 *
 	 * @throws VerifyLoginException if errors are encountered
 	 */
 	private function validateToken(string $jwt, ?string &$currentPublicKey, bool $first = false) : void{
@@ -139,7 +135,7 @@ class ProcessLoginTask extends AsyncTask{
 		$v = openssl_verify(
 			"$headB64.$payloadB64",
 			(new DerSignatureSerializer())->serialize($sig),
-			(new PemPublicKeySerializer($derSerializer))->serialize($derSerializer->parse(base64_decode($currentPublicKey))),
+			(new PemPublicKeySerializer($derSerializer))->serialize($derSerializer->parse(base64_decode($currentPublicKey, true))),
 			OPENSSL_ALGO_SHA384
 		);
 

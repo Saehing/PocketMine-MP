@@ -64,7 +64,6 @@ class NetworkBinaryStream extends BinaryStream{
 	private const DAMAGE_TAG_CONFLICT_RESOLUTION = "___Damage_ProtocolCollisionResolution___";
 
 	/**
-	 * @return string
 	 * @throws BinaryDataException
 	 */
 	public function getString() : string{
@@ -77,7 +76,6 @@ class NetworkBinaryStream extends BinaryStream{
 	}
 
 	/**
-	 * @return UUID
 	 * @throws BinaryDataException
 	 */
 	public function getUUID() : UUID{
@@ -119,10 +117,10 @@ class NetworkBinaryStream extends BinaryStream{
 		$capeId = $this->getString();
 		$fullSkinId = $this->getString();
 
-		return new SkinData($skinId, $skinResourcePatch, $skinData, $animations, $capeData, $geometryData, $animationData, $premium, $persona, $capeOnClassic, $capeId);
+		return new SkinData($skinId, $skinResourcePatch, $skinData, $animations, $capeData, $geometryData, $animationData, $premium, $persona, $capeOnClassic, $capeId, $fullSkinId);
 	}
 
-	public function putSkin(SkinData $skin){
+	public function putSkin(SkinData $skin): void{
 		$this->putString($skin->getSkinId());
 		$this->putString($skin->getResourcePatch());
 		$this->putSkinImage($skin->getSkinImage());
@@ -139,16 +137,18 @@ class NetworkBinaryStream extends BinaryStream{
 		$this->putBool($skin->isPersona());
 		$this->putBool($skin->isPersonaCapeOnClassic());
 		$this->putString($skin->getCapeId());
-
-		//this has to be unique or the client will do stupid things
-		$this->putString(UUID::fromRandom()->toString()); //full skin ID
+		$this->putString($skin->getFullSkinId());
 	}
 
 	private function getSkinImage() : SkinImage{
 		$width = $this->getLInt();
 		$height = $this->getLInt();
 		$data = $this->getString();
-		return new SkinImage($height, $width, $data);
+		try{
+			return new SkinImage($height, $width, $data);
+		}catch(\InvalidArgumentException $e){
+			throw new BadPacketException($e->getMessage(), 0, $e);
+		}
 	}
 
 	private function putSkinImage(SkinImage $image) : void{
@@ -158,8 +158,6 @@ class NetworkBinaryStream extends BinaryStream{
 	}
 
 	/**
-	 * @return Item
-	 *
 	 * @throws BadPacketException
 	 * @throws BinaryDataException
 	 */
@@ -226,7 +224,6 @@ class NetworkBinaryStream extends BinaryStream{
 			throw new BadPacketException($e->getMessage(), 0, $e);
 		}
 	}
-
 
 	public function putSlot(Item $item) : void{
 		if($item->getId() === 0){
@@ -298,6 +295,7 @@ class NetworkBinaryStream extends BinaryStream{
 	 * Decodes entity metadata from the stream.
 	 *
 	 * @return MetadataProperty[]
+	 * @phpstan-return array<int, MetadataProperty>
 	 *
 	 * @throws BadPacketException
 	 * @throws BinaryDataException
@@ -335,6 +333,7 @@ class NetworkBinaryStream extends BinaryStream{
 	 * Writes entity metadata to the packet buffer.
 	 *
 	 * @param MetadataProperty[] $metadata
+	 * @phpstan-param array<int, MetadataProperty> $metadata
 	 */
 	public function putEntityMetadata(array $metadata) : void{
 		$this->putUnsignedVarInt(count($metadata));
@@ -397,7 +396,6 @@ class NetworkBinaryStream extends BinaryStream{
 
 	/**
 	 * Reads and returns an EntityUniqueID
-	 * @return int
 	 *
 	 * @throws BinaryDataException
 	 */
@@ -407,8 +405,6 @@ class NetworkBinaryStream extends BinaryStream{
 
 	/**
 	 * Writes an EntityUniqueID
-	 *
-	 * @param int $eid
 	 */
 	public function putEntityUniqueId(int $eid) : void{
 		$this->putVarLong($eid);
@@ -416,7 +412,6 @@ class NetworkBinaryStream extends BinaryStream{
 
 	/**
 	 * Reads and returns an EntityRuntimeID
-	 * @return int
 	 *
 	 * @throws BinaryDataException
 	 */
@@ -426,8 +421,6 @@ class NetworkBinaryStream extends BinaryStream{
 
 	/**
 	 * Writes an EntityRuntimeID
-	 *
-	 * @param int $eid
 	 */
 	public function putEntityRuntimeId(int $eid) : void{
 		$this->putUnsignedVarLong($eid);
@@ -436,9 +429,9 @@ class NetworkBinaryStream extends BinaryStream{
 	/**
 	 * Reads an block position with unsigned Y coordinate.
 	 *
-	 * @param int &$x
-	 * @param int &$y
-	 * @param int &$z
+	 * @param int $x reference parameter
+	 * @param int $y reference parameter
+	 * @param int $z reference parameter
 	 *
 	 * @throws BinaryDataException
 	 */
@@ -450,10 +443,6 @@ class NetworkBinaryStream extends BinaryStream{
 
 	/**
 	 * Writes a block position with unsigned Y coordinate.
-	 *
-	 * @param int $x
-	 * @param int $y
-	 * @param int $z
 	 */
 	public function putBlockPosition(int $x, int $y, int $z) : void{
 		$this->putVarInt($x);
@@ -464,9 +453,9 @@ class NetworkBinaryStream extends BinaryStream{
 	/**
 	 * Reads a block position with a signed Y coordinate.
 	 *
-	 * @param int &$x
-	 * @param int &$y
-	 * @param int &$z
+	 * @param int $x reference parameter
+	 * @param int $y reference parameter
+	 * @param int $z reference parameter
 	 *
 	 * @throws BinaryDataException
 	 */
@@ -478,10 +467,6 @@ class NetworkBinaryStream extends BinaryStream{
 
 	/**
 	 * Writes a block position with a signed Y coordinate.
-	 *
-	 * @param int $x
-	 * @param int $y
-	 * @param int $z
 	 */
 	public function putSignedBlockPosition(int $x, int $y, int $z) : void{
 		$this->putVarInt($x);
@@ -491,8 +476,6 @@ class NetworkBinaryStream extends BinaryStream{
 
 	/**
 	 * Reads a floating-point Vector3 object with coordinates rounded to 4 decimal places.
-	 *
-	 * @return Vector3
 	 *
 	 * @throws BinaryDataException
 	 */
@@ -511,11 +494,9 @@ class NetworkBinaryStream extends BinaryStream{
 	 * For all other purposes, use the non-nullable version.
 	 *
 	 * @see NetworkBinaryStream::putVector3()
-	 *
-	 * @param Vector3|null $vector
 	 */
 	public function putVector3Nullable(?Vector3 $vector) : void{
-		if($vector){
+		if($vector !== null){
 			$this->putVector3($vector);
 		}else{
 			$this->putLFloat(0.0);
@@ -526,8 +507,6 @@ class NetworkBinaryStream extends BinaryStream{
 
 	/**
 	 * Writes a floating-point Vector3 object
-	 *
-	 * @param Vector3 $vector
 	 */
 	public function putVector3(Vector3 $vector) : void{
 		$this->putLFloat($vector->x);
@@ -536,11 +515,10 @@ class NetworkBinaryStream extends BinaryStream{
 	}
 
 	/**
-	 * @return float
 	 * @throws BinaryDataException
 	 */
 	public function getByteRotation() : float{
-		return (float) ($this->getByte() * (360 / 256));
+		return ($this->getByte() * (360 / 256));
 	}
 
 	public function putByteRotation(float $rotation) : void{
@@ -551,7 +529,8 @@ class NetworkBinaryStream extends BinaryStream{
 	 * Reads gamerules
 	 * TODO: implement this properly
 	 *
-	 * @return array, members are in the structure [name => [type, value]]
+	 * @return mixed[][], members are in the structure [name => [type, value]]
+	 * @phpstan-return array<string, array{0: int, 1: bool|int|float}>
 	 *
 	 * @throws BadPacketException
 	 * @throws BinaryDataException
@@ -587,7 +566,8 @@ class NetworkBinaryStream extends BinaryStream{
 	 * Writes a gamerule array, members should be in the structure [name => [type, value]]
 	 * TODO: implement this properly
 	 *
-	 * @param array $rules
+	 * @param mixed[][] $rules
+	 * @phpstan-param array<string, array{0: int, 1: bool|int|float}> $rules
 	 */
 	public function putGameRules(array $rules) : void{
 		$this->putUnsignedVarInt(count($rules));
@@ -611,11 +591,9 @@ class NetworkBinaryStream extends BinaryStream{
 	}
 
 	/**
-	 * @return EntityLink
-	 *
 	 * @throws BinaryDataException
 	 */
-	protected function getEntityLink() : EntityLink{
+	public function getEntityLink() : EntityLink{
 		$link = new EntityLink();
 
 		$link->fromEntityUniqueId = $this->getEntityUniqueId();
@@ -626,10 +604,7 @@ class NetworkBinaryStream extends BinaryStream{
 		return $link;
 	}
 
-	/**
-	 * @param EntityLink $link
-	 */
-	protected function putEntityLink(EntityLink $link) : void{
+	public function putEntityLink(EntityLink $link) : void{
 		$this->putEntityUniqueId($link->fromEntityUniqueId);
 		$this->putEntityUniqueId($link->toEntityUniqueId);
 		$this->putByte($link->type);
@@ -637,10 +612,9 @@ class NetworkBinaryStream extends BinaryStream{
 	}
 
 	/**
-	 * @return CommandOriginData
 	 * @throws BinaryDataException
 	 */
-	protected function getCommandOriginData() : CommandOriginData{
+	public function getCommandOriginData() : CommandOriginData{
 		$result = new CommandOriginData();
 
 		$result->type = $this->getUnsignedVarInt();
@@ -654,7 +628,7 @@ class NetworkBinaryStream extends BinaryStream{
 		return $result;
 	}
 
-	protected function putCommandOriginData(CommandOriginData $data) : void{
+	public function putCommandOriginData(CommandOriginData $data) : void{
 		$this->putUnsignedVarInt($data->type);
 		$this->putUUID($data->uuid);
 		$this->putString($data->requestId);
@@ -664,7 +638,7 @@ class NetworkBinaryStream extends BinaryStream{
 		}
 	}
 
-	protected function getStructureSettings() : StructureSettings{
+	public function getStructureSettings() : StructureSettings{
 		$result = new StructureSettings();
 
 		$result->paletteName = $this->getString();
@@ -684,7 +658,7 @@ class NetworkBinaryStream extends BinaryStream{
 		return $result;
 	}
 
-	protected function putStructureSettings(StructureSettings $structureSettings) : void{
+	public function putStructureSettings(StructureSettings $structureSettings) : void{
 		$this->putString($structureSettings->paletteName);
 
 		$this->putBool($structureSettings->ignoreEntities);

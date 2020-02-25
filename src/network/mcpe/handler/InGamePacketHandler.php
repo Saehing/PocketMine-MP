@@ -87,6 +87,7 @@ use pocketmine\network\mcpe\serializer\NetworkNbtSerializer;
 use pocketmine\player\Player;
 use function array_push;
 use function base64_encode;
+use function count;
 use function fmod;
 use function implode;
 use function json_decode;
@@ -244,6 +245,7 @@ class InGamePacketHandler extends PacketHandler{
 
 			if($isFinalCraftingPart){
 				try{
+					$this->session->getInvManager()->onTransactionStart($this->craftingTransaction);
 					$this->craftingTransaction->execute();
 				}catch(TransactionValidationException $e){
 					$this->session->getLogger()->debug("Failed to execute crafting transaction: " . $e->getMessage());
@@ -260,7 +262,13 @@ class InGamePacketHandler extends PacketHandler{
 				return false;
 			}
 
+			if(count($actions) === 0){
+				//TODO: 1.13+ often sends transactions with nothing but useless crap in them, no need for the debug noise
+				return true;
+			}
+
 			$transaction = new InventoryTransaction($this->player, $actions);
+			$this->session->getInvManager()->onTransactionStart($transaction);
 			try{
 				$transaction->execute();
 			}catch(TransactionValidationException $e){
@@ -304,8 +312,10 @@ class InGamePacketHandler extends PacketHandler{
 				}
 				return true;
 			case UseItemTransactionData::ACTION_CLICK_AIR:
-				if($this->player->isUsingItem() and !$this->player->consumeHeldItem()){
-					$this->session->getInvManager()->syncSlot($this->player->getInventory(), $this->player->getInventory()->getHeldItemIndex());
+				if($this->player->isUsingItem()){
+					if(!$this->player->consumeHeldItem()){
+						$this->session->getInvManager()->syncSlot($this->player->getInventory(), $this->player->getInventory()->getHeldItemIndex());
+					}
 					return true;
 				}
 				if(!$this->player->useHeldItem()){
@@ -319,9 +329,6 @@ class InGamePacketHandler extends PacketHandler{
 
 	/**
 	 * Internal function used to execute rollbacks when an action fails on a block.
-	 *
-	 * @param Vector3  $blockPos
-	 * @param int|null $face
 	 */
 	private function onFailedBlockAction(Vector3 $blockPos, ?int $face) : void{
 		$this->session->getInvManager()->syncSlot($this->player->getInventory(), $this->player->getInventory()->getHeldItemIndex());
@@ -489,14 +496,9 @@ class InGamePacketHandler extends PacketHandler{
 			return true;
 		}
 
-		$window = $this->player->getCurrentWindow();
-		if($window !== null and $packet->windowId === $this->session->getInvManager()->getCurrentWindowId()){
-			$this->player->removeCurrentWindow();
-			return true;
-		}
+		$this->session->getInvManager()->onClientRemoveWindow($packet->windowId);
 
-		$this->session->getLogger()->debug("Attempted to close inventory with network ID $packet->windowId, but current is " . $this->session->getInvManager()->getCurrentWindowId());
-		return false;
+		return true;
 	}
 
 	public function handlePlayerHotbar(PlayerHotbarPacket $packet) : bool{
@@ -685,9 +687,6 @@ class InGamePacketHandler extends PacketHandler{
 	/**
 	 * Hack to work around a stupid bug in Minecraft W10 which causes empty strings to be sent unquoted in form responses.
 	 *
-	 * @param string $json
-	 * @param bool   $assoc
-	 *
 	 * @return mixed
 	 * @throws BadPacketException
 	 */
@@ -696,9 +695,9 @@ class InGamePacketHandler extends PacketHandler{
 			$raw = $matches[1];
 			$lastComma = -1;
 			$newParts = [];
-			$quoteType = null;
+			$inQuotes = false;
 			for($i = 0, $len = strlen($raw); $i <= $len; ++$i){
-				if($i === $len or ($raw[$i] === "," and $quoteType === null)){
+				if($i === $len or ($raw[$i] === "," and !$inQuotes)){
 					$part = substr($raw, $lastComma + 1, $i - ($lastComma + 1));
 					if(trim($part) === ""){ //regular parts will have quotes or something else that makes them non-empty
 						$part = '""';
@@ -706,12 +705,13 @@ class InGamePacketHandler extends PacketHandler{
 					$newParts[] = $part;
 					$lastComma = $i;
 				}elseif($raw[$i] === '"'){
-					if($quoteType === null){
-						$quoteType = $raw[$i];
-					}elseif($raw[$i] === $quoteType){
-						for($backslashes = 0; $backslashes < $i && $raw[$i - $backslashes - 1] === "\\"; ++$backslashes){}
+					if(!$inQuotes){
+						$inQuotes = true;
+					}else{
+						$backslashes = 0;
+						for(; $backslashes < $i && $raw[$i - $backslashes - 1] === "\\"; ++$backslashes){}
 						if(($backslashes % 2) === 0){ //unescaped quote
-							$quoteType = null;
+							$inQuotes = false;
 						}
 					}
 				}

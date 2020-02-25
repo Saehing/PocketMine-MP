@@ -45,19 +45,21 @@ final class FastChunkSerializer{
 		//NOOP
 	}
 
+	public static function serializeWithoutLight(Chunk $chunk) : string{
+		return self::serialize($chunk, false);
+	}
+
 	/**
 	 * Fast-serializes the chunk for passing between threads
 	 * TODO: tiles and entities
-	 *
-	 * @param Chunk $chunk
-	 *
-	 * @return string
 	 */
-	public static function serialize(Chunk $chunk) : string{
+	public static function serialize(Chunk $chunk, bool $includeLight = true) : string{
+		$includeLight = $includeLight && $chunk->isLightPopulated();
+
 		$stream = new BinaryStream();
 		$stream->putInt($chunk->getX());
 		$stream->putInt($chunk->getZ());
-		$stream->putByte(($chunk->isLightPopulated() ? 4 : 0) | ($chunk->isPopulated() ? 2 : 0) | ($chunk->isGenerated() ? 1 : 0));
+		$stream->putByte(($includeLight ? 4 : 0) | ($chunk->isPopulated() ? 2 : 0) | ($chunk->isGenerated() ? 1 : 0));
 		if($chunk->isGenerated()){
 			//subchunks
 			$subChunks = $chunk->getSubChunks();
@@ -74,12 +76,12 @@ final class FastChunkSerializer{
 
 					$stream->putByte($blocks->getBitsPerBlock());
 					$stream->put($wordArray);
-					$serialPalette = pack("N*", ...$palette);
+					$serialPalette = pack("L*", ...$palette);
 					$stream->putInt(strlen($serialPalette));
 					$stream->put($serialPalette);
 				}
 
-				if($chunk->isLightPopulated()){
+				if($includeLight){
 					$stream->put($subChunk->getBlockSkyLightArray()->getData());
 					$stream->put($subChunk->getBlockLightArray()->getData());
 				}
@@ -87,8 +89,8 @@ final class FastChunkSerializer{
 
 			//biomes
 			$stream->put($chunk->getBiomeIdArray());
-			if($chunk->isLightPopulated()){
-				$stream->put(pack("v*", ...$chunk->getHeightMapArray()));
+			if($includeLight){
+				$stream->put(pack("S*", ...$chunk->getHeightMapArray()));
 			}
 		}
 
@@ -97,10 +99,6 @@ final class FastChunkSerializer{
 
 	/**
 	 * Deserializes a fast-serialized chunk
-	 *
-	 * @param string $data
-	 *
-	 * @return Chunk
 	 */
 	public static function deserialize(string $data) : Chunk{
 		$stream = new BinaryStream($data);
@@ -125,7 +123,7 @@ final class FastChunkSerializer{
 				for($i = 0, $layerCount = $stream->getByte(); $i < $layerCount; ++$i){
 					$bitsPerBlock = $stream->getByte();
 					$words = $stream->get(PalettedBlockArray::getExpectedWordArraySize($bitsPerBlock));
-					$palette = array_values(unpack("N*", $stream->get($stream->getInt())));
+					$palette = array_values(unpack("L*", $stream->get($stream->getInt())));
 
 					$layers[] = PalettedBlockArray::fromData($bitsPerBlock, $words, $palette);
 				}
@@ -136,7 +134,7 @@ final class FastChunkSerializer{
 
 			$biomeIds = $stream->get(256);
 			if($lightPopulated){
-				$heightMap = array_values(unpack("v*", $stream->get(512)));
+				$heightMap = array_values(unpack("S*", $stream->get(512)));
 			}
 		}
 

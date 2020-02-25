@@ -82,8 +82,14 @@ class CrashDump{
 
 	/** @var Server */
 	private $server;
+	/** @var resource */
 	private $fp;
+	/** @var int */
 	private $time;
+	/**
+	 * @var mixed[]
+	 * @phpstan-var array<string, mixed>
+	 */
 	private $data = [];
 	/** @var string */
 	private $encodedData = "";
@@ -124,6 +130,10 @@ class CrashDump{
 		return $this->encodedData;
 	}
 
+	/**
+	 * @return mixed[]
+	 * @phpstan-return array<string, mixed>
+	 */
 	public function getData() : array{
 		return $this->data;
 	}
@@ -313,10 +323,16 @@ class CrashDump{
 		$this->addLine("OS : " . PHP_OS . ", " . Utils::getOS());
 	}
 
+	/**
+	 * @param string $line
+	 */
 	public function addLine($line = "") : void{
 		fwrite($this->fp, $line . PHP_EOL);
 	}
 
+	/**
+	 * @param string $str
+	 */
 	public function add($str) : void{
 		fwrite($this->fp, $str);
 	}

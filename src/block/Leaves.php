@@ -67,7 +67,10 @@ class Leaves extends Transparent{
 		return true;
 	}
 
-
+	/**
+	 * @param true[] $visited reference parameter
+	 * @phpstan-param array<string, true> $visited
+	 */
 	protected function findLog(Vector3 $pos, array &$visited = [], int $distance = 0) : bool{
 		$index = World::blockHash($pos->x, $pos->y, $pos->z);
 		if(isset($visited[$index])){
@@ -121,7 +124,7 @@ class Leaves extends Transparent{
 	}
 
 	public function getDrops(Item $item) : array{
-		if($item->getBlockToolType() & BlockToolType::SHEARS){
+		if(($item->getBlockToolType() & BlockToolType::SHEARS) !== 0){
 			return $this->getDropsForCompatibleTool($item);
 		}
 

@@ -25,10 +25,10 @@ namespace pocketmine\network\mcpe\protocol;
 
 #include <rules/DataPacket.h>
 
-
 use Particle\Validator\Validator;
 use pocketmine\network\BadPacketException;
 use pocketmine\network\mcpe\handler\PacketHandler;
+use pocketmine\network\mcpe\serializer\NetworkBinaryStream;
 use pocketmine\utils\BinaryDataException;
 use pocketmine\utils\BinaryStream;
 use pocketmine\utils\Utils;
@@ -84,11 +84,17 @@ class LoginPacket extends DataPacket implements ServerboundPacket{
 
 	/** @var string[] array of encoded JWT */
 	public $chainDataJwt = [];
-	/** @var array|null extraData index of whichever JWT has it */
+	/**
+	 * @var mixed[]|null extraData index of whichever JWT has it
+	 * @phpstan-var array<string, mixed>
+	 */
 	public $extraData = null;
 	/** @var string */
 	public $clientDataJwt;
-	/** @var array decoded payload of the clientData JWT */
+	/**
+	 * @var mixed[] decoded payload of the clientData JWT
+	 * @phpstan-var array<string, mixed>
+	 */
 	public $clientData = [];
 
 	/**
@@ -103,14 +109,12 @@ class LoginPacket extends DataPacket implements ServerboundPacket{
 		return true;
 	}
 
-	protected function decodePayload() : void{
-		$this->protocol = $this->getInt();
-		$this->decodeConnectionRequest();
+	protected function decodePayload(NetworkBinaryStream $in) : void{
+		$this->protocol = $in->getInt();
+		$this->decodeConnectionRequest($in);
 	}
 
 	/**
-	 * @param Validator $v
-	 * @param string    $name
 	 * @param mixed     $data
 	 *
 	 * @throws BadPacketException
@@ -130,8 +134,8 @@ class LoginPacket extends DataPacket implements ServerboundPacket{
 	 * @throws BadPacketException
 	 * @throws BinaryDataException
 	 */
-	protected function decodeConnectionRequest() : void{
-		$buffer = new BinaryStream($this->getString());
+	protected function decodeConnectionRequest(NetworkBinaryStream $in) : void{
+		$buffer = new BinaryStream($in->getString());
 
 		$chainData = json_decode($buffer->get($buffer->getLInt()), true);
 		if(!is_array($chainData)){
@@ -216,7 +220,7 @@ class LoginPacket extends DataPacket implements ServerboundPacket{
 		$this->clientData = $clientData;
 	}
 
-	protected function encodePayload() : void{
+	protected function encodePayload(NetworkBinaryStream $out) : void{
 		//TODO
 	}
 

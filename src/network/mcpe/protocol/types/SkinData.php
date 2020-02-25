@@ -23,6 +23,8 @@ declare(strict_types=1);
 
 namespace pocketmine\network\mcpe\protocol\types;
 
+use pocketmine\utils\UUID;
+
 class SkinData{
 
 	/** @var string */
@@ -47,21 +49,13 @@ class SkinData{
 	private $personaCapeOnClassic;
 	/** @var string */
 	private $capeId;
+	/** @var string */
+	private $fullSkinId;
 
 	/**
-	 * @param string          $skinId
-	 * @param string          $resourcePatch
-	 * @param SkinImage       $skinImage
 	 * @param SkinAnimation[] $animations
-	 * @param SkinImage|null  $capeImage
-	 * @param string          $geometryData
-	 * @param string          $animationData
-	 * @param bool            $premium
-	 * @param bool            $persona
-	 * @param bool            $personaCapeOnClassic
-	 * @param string          $capeId
 	 */
-	public function __construct(string $skinId, string $resourcePatch, SkinImage $skinImage, array $animations = [], SkinImage $capeImage = null, string $geometryData = "", string $animationData = "", bool $premium = false, bool $persona = false, bool $personaCapeOnClassic = false, string $capeId = ""){
+	public function __construct(string $skinId, string $resourcePatch, SkinImage $skinImage, array $animations = [], SkinImage $capeImage = null, string $geometryData = "", string $animationData = "", bool $premium = false, bool $persona = false, bool $personaCapeOnClassic = false, string $capeId = "", ?string $fullSkinId = null){
 		$this->skinId = $skinId;
 		$this->resourcePatch = $resourcePatch;
 		$this->skinImage = $skinImage;
@@ -73,25 +67,18 @@ class SkinData{
 		$this->persona = $persona;
 		$this->personaCapeOnClassic = $personaCapeOnClassic;
 		$this->capeId = $capeId;
+		//this has to be unique or the client will do stupid things
+		$this->fullSkinId = $fullSkinId ?? UUID::fromRandom()->toString();
 	}
 
-	/**
-	 * @return string
-	 */
 	public function getSkinId() : string{
 		return $this->skinId;
 	}
 
-	/**
-	 * @return string
-	 */
 	public function getResourcePatch() : string{
 		return $this->resourcePatch;
 	}
 
-	/**
-	 * @return SkinImage
-	 */
 	public function getSkinImage() : SkinImage{
 		return $this->skinImage;
 	}
@@ -103,53 +90,35 @@ class SkinData{
 		return $this->animations;
 	}
 
-	/**
-	 * @return SkinImage
-	 */
 	public function getCapeImage() : SkinImage{
 		return $this->capeImage;
 	}
 
-	/**
-	 * @return string
-	 */
 	public function getGeometryData() : string{
 		return $this->geometryData;
 	}
 
-	/**
-	 * @return string
-	 */
 	public function getAnimationData() : string{
 		return $this->animationData;
 	}
 
-	/**
-	 * @return bool
-	 */
 	public function isPersona() : bool{
 		return $this->persona;
 	}
 
-	/**
-	 * @return bool
-	 */
 	public function isPremium() : bool{
 		return $this->premium;
 	}
 
-	/**
-	 * @return bool
-	 */
 	public function isPersonaCapeOnClassic() : bool{
 		return $this->personaCapeOnClassic;
 	}
 
-	/**
-	 * @return string
-	 */
 	public function getCapeId() : string{
 		return $this->capeId;
 	}
 
+	public function getFullSkinId() : string{
+		return $this->fullSkinId;
+	}
 }

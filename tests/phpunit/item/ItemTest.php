@@ -110,7 +110,7 @@ class ItemTest extends TestCase{
 					continue 2;
 				}
 			}
-			self::assertTrue(false, "Unknown extra enchantment found: " . $enchantment->getType()->getName() . " x" . $enchantment->getLevel());
+			self::fail("Unknown extra enchantment found: " . $enchantment->getType()->getName() . " x" . $enchantment->getLevel());
 		}
 		self::assertEmpty($enchantments, "Expected all enchantments to be present");
 	}
@@ -142,5 +142,19 @@ class ItemTest extends TestCase{
 		self::assertCount(2, $this->item->getEnchantments());
 		$this->item->removeEnchantment(Enchantment::FIRE_ASPECT(), 2);
 		self::assertFalse($this->item->hasEnchantment(Enchantment::FIRE_ASPECT()));
+	}
+
+	public function testSetCountTooBig() : void{
+		$this->expectException(\InvalidArgumentException::class);
+
+		$item = ItemFactory::get(ItemIds::STONE);
+		$item->setCount(256);
+	}
+
+	public function testSetCountTooSmall() : void{
+		$this->expectException(\InvalidArgumentException::class);
+
+		$item = ItemFactory::get(ItemIds::STONE);
+		$item->setCount(-1);
 	}
 }

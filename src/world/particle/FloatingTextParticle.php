@@ -42,15 +42,15 @@ use function str_repeat;
 class FloatingTextParticle implements Particle{
 	//TODO: HACK!
 
+	/** @var string */
 	protected $text;
+	/** @var string */
 	protected $title;
-	protected $entityId;
+	/** @var int|null */
+	protected $entityId = null;
+	/** @var bool */
 	protected $invisible = false;
 
-	/**
-	 * @param string $text
-	 * @param string $title
-	 */
 	public function __construct(string $text, string $title = ""){
 		$this->text = $text;
 		$this->title = $title;

@@ -1,19 +1,8 @@
 parameters:
 	ignoreErrors:
-		-
-			message: "#^PHPDoc tag @param has invalid value \\(.+\\)\\: Unexpected token \"&\", expected variable at offset \\d+$#"
-			path: ../../../src
-
+		- "#^Call to function is_resource\\(\\) with resource will always evaluate to true\\.$#"
 		-
 			message: "#^Default value of the parameter \\#\\d+ \\$[A-Za-z\\d_]+ \\(\\-?\\d+\\) of method .+\\(\\) is incompatible with type float\\.$#"
-			path: ../../../src
-
-		-
-			message: "#^Cannot access an offset on Threaded\\.$#"
-			path: ../../../src
-
-		-
-			message: "#^Cannot assign new offset to Threaded\\.$#"
 			path: ../../../src
 
 		-
@@ -27,6 +16,18 @@ parameters:
 			path: ../../../src/MemoryManager.php
 
 		-
+			#is_a() type narrowing isn't respected yet
+			message: "#^Parameter \\#1 \\$class of static method pocketmine\\\\world\\\\format\\\\io\\\\WorldProviderManager\\:\\:setDefault\\(\\) expects class\\-string\\<pocketmine\\\\world\\\\format\\\\io\\\\WritableWorldProvider\\>, class\\-string\\<pocketmine\\\\world\\\\format\\\\io\\\\WorldProvider\\> given\\.$#"
+			count: 1
+			path: ../../../src/Server.php
+
+		-
+			#dynamic instanceof
+			message: "#^Instanceof between pocketmine\\\\block\\\\tile\\\\Tile and class\\-string\\<pocketmine\\\\block\\\\tile\\\\Tile\\> will always evaluate to true\\.$#"
+			count: 1
+			path: ../../../src/block/Block.php
+
+		-
 			message: "#^Comparison operation \"\\>\\=\" between 0 and 2 is always false\\.$#"
 			count: 1
 			path: ../../../src/block/Liquid.php
@@ -38,9 +39,10 @@ parameters:
 			path: ../../../src/block/Liquid.php
 
 		-
-			message: "#^Cannot access an offset on Ds\\\\Deque&iterable\\<pocketmine\\\\block\\\\utils\\\\BannerPattern\\>\\.$#"
+			#readline() may return false
+			message: "#^Strict comparison using \\!\\=\\= between string and false will always evaluate to true\\.$#"
 			count: 1
-			path: ../../../src/block/tile/Banner.php
+			path: ../../../src/command/CommandReader.php
 
 		-
 			message: "#^Call to function assert\\(\\) with false and 'unknown hit type' will always evaluate to false\\.$#"
@@ -54,13 +56,19 @@ parameters:
 			path: ../../../src/item/ItemFactory.php
 
 		-
-			message: "#^Cannot access offset int on Ds\\\\Deque&iterable\\<pocketmine\\\\item\\\\WritableBookPage\\>\\.$#"
-			count: 2
-			path: ../../../src/item/WritableBookBase.php
+			message: "#^If condition is always false\\.$#"
+			count: 1
+			path: ../../../src/item/ItemFactory.php
 
 		-
 			#object to array cast analysis bug
 			message: "#^Call to function is_object\\(\\) with int will always evaluate to false\\.$#"
+			count: 1
+			path: ../../../src/network/mcpe/protocol/DataPacket.php
+
+		-
+			#object to array cast analysis bug
+			message: "#^Casting to string something that's already string\\.$#"
 			count: 1
 			path: ../../../src/network/mcpe/protocol/DataPacket.php
 
@@ -70,23 +78,12 @@ parameters:
 			path: ../../../src/network/mcpe/protocol/types/entity/EntityMetadataCollection.php
 
 		-
-			message: "#^Instanceof between int and PharFileInfo will always evaluate to false\\.$#"
+			message: "#^Instanceof between pocketmine\\\\network\\\\mcpe\\\\protocol\\\\types\\\\entity\\\\MetadataProperty and pocketmine\\\\network\\\\mcpe\\\\protocol\\\\types\\\\entity\\\\MetadataProperty will always evaluate to true\\.$#"
 			count: 1
-			path: ../../../src/plugin/PharPluginLoader.php
+			path: ../../../src/network/mcpe/protocol/types/entity/EntityMetadataCollection.php
 
 		-
-			#ReflectionFunction::getClosureThis() should be nullable
-			message: "#^Else branch is unreachable because ternary operator condition is always true\\.$#"
+			#phpstan doesn't understand that SplFixedArray may contain null
+			message: "#^Call to static method PHPUnit\\\\Framework\\\\Assert\\:\\:assertNotNull\\(\\) with int and string will always evaluate to true\\.$#"
 			count: 1
-			path: ../../../src/utils/Utils.php
-
-		-
-			#ReflectionFunction::getClosureScopeClass() should be nullable
-			message: "#^Unreachable statement \\- code above always terminates\\.$#"
-			count: 1
-			path: ../../../src/utils/Utils.php
-
-		-
-			message: "#^Strict comparison using \\=\\=\\= between int\\<min, 3\\> and 4 will always evaluate to false\\.$#"
-			count: 1
-			path: ../../../src/world/World.php
+			path: ../../../tests/phpunit/block/BlockTest.php

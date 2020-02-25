@@ -38,28 +38,18 @@ final class ChunkSerializer{
 	/**
 	 * Returns the number of subchunks that will be sent from the given chunk.
 	 * Chunks are sent in a stack, so every chunk below the top non-empty one must be sent.
-	 * @param Chunk $chunk
-	 *
-	 * @return int
 	 */
 	public static function getSubChunkCount(Chunk $chunk) : int{
 		for($count = $chunk->getSubChunks()->count(); $count > 0; --$count){
 			if($chunk->getSubChunk($count - 1)->isEmptyFast()){
 				continue;
 			}
-			break;
+			return $count;
 		}
 
-		return $count;
+		return 0;
 	}
 
-	/**
-	 * @param Chunk       $chunk
-	 *
-	 * @param string|null $tiles
-	 *
-	 * @return string
-	 */
 	public static function serialize(Chunk $chunk, ?string $tiles = null) : string{
 		$stream = new NetworkBinaryStream();
 		$subChunkCount = self::getSubChunkCount($chunk);

@@ -45,7 +45,10 @@ class SubChunkIteratorManager{
 	/** @var int */
 	protected $currentZ;
 
-	/** @var \Closure|null */
+	/**
+	 * @var \Closure|null
+	 * @phpstan-var (\Closure() : void)|null
+	 */
 	private $onSubChunkChangeFunc = null;
 
 	public function __construct(ChunkManager $world){
@@ -83,15 +86,16 @@ class SubChunkIteratorManager{
 		return true;
 	}
 
+	/**
+	 * @phpstan-param \Closure() : void $callback
+	 */
 	public function onSubChunkChange(\Closure $callback) : void{
-		Utils::validateCallableSignature(function(){}, $callback);
+		Utils::validateCallableSignature(function() : void{}, $callback);
 		$this->onSubChunkChangeFunc = $callback;
 	}
 
 	/**
 	 * Returns whether we currently have a valid terrain pointer.
-	 *
-	 * @return bool
 	 */
 	public function isValid() : bool{
 		return $this->currentSubChunk !== null;

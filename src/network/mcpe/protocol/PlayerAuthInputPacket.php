@@ -29,6 +29,7 @@ use pocketmine\math\Vector3;
 use pocketmine\network\mcpe\handler\PacketHandler;
 use pocketmine\network\mcpe\protocol\types\InputMode;
 use pocketmine\network\mcpe\protocol\types\PlayMode;
+use pocketmine\network\mcpe\serializer\NetworkBinaryStream;
 use function assert;
 
 class PlayerAuthInputPacket extends DataPacket implements ServerboundPacket{
@@ -56,18 +57,9 @@ class PlayerAuthInputPacket extends DataPacket implements ServerboundPacket{
 	private $vrGazeDirection = null;
 
 	/**
-	 * @param Vector3      $position
-	 * @param float        $pitch
-	 * @param float        $yaw
-	 * @param float        $headYaw
-	 * @param float        $moveVecX
-	 * @param float        $moveVecZ
-	 * @param int          $inputFlags
 	 * @param int          $inputMode @see InputMode
 	 * @param int          $playMode @see PlayMode
 	 * @param Vector3|null $vrGazeDirection only used when PlayMode::VR
-	 *
-	 * @return self
 	 */
 	public static function create(Vector3 $position, float $pitch, float $yaw, float $headYaw, float $moveVecX, float $moveVecZ, int $inputFlags, int $inputMode, int $playMode, ?Vector3 $vrGazeDirection = null) : self{
 		if($playMode === PlayMode::VR and $vrGazeDirection === null){
@@ -85,7 +77,7 @@ class PlayerAuthInputPacket extends DataPacket implements ServerboundPacket{
 		$result->inputMode = $inputMode;
 		$result->playMode = $playMode;
 		if($vrGazeDirection !== null){
-			$this->vrGazeDirection = $vrGazeDirection->asVector3();
+			$result->vrGazeDirection = $vrGazeDirection->asVector3();
 		}
 		return $result;
 	}
@@ -120,7 +112,6 @@ class PlayerAuthInputPacket extends DataPacket implements ServerboundPacket{
 
 	/**
 	 * @see InputMode
-	 * @return int
 	 */
 	public function getInputMode() : int{
 		return $this->inputMode;
@@ -128,7 +119,6 @@ class PlayerAuthInputPacket extends DataPacket implements ServerboundPacket{
 
 	/**
 	 * @see PlayMode
-	 * @return int
 	 */
 	public function getPlayMode() : int{
 		return $this->playMode;
@@ -138,34 +128,34 @@ class PlayerAuthInputPacket extends DataPacket implements ServerboundPacket{
 		return $this->vrGazeDirection;
 	}
 
-	protected function decodePayload() : void{
-		$this->yaw = $this->getLFloat();
-		$this->pitch = $this->getLFloat();
-		$this->position = $this->getVector3();
-		$this->moveVecX = $this->getLFloat();
-		$this->moveVecZ = $this->getLFloat();
-		$this->headYaw = $this->getLFloat();
-		$this->inputFlags = $this->getUnsignedVarLong();
-		$this->inputMode = $this->getUnsignedVarInt();
-		$this->playMode = $this->getUnsignedVarInt();
+	protected function decodePayload(NetworkBinaryStream $in) : void{
+		$this->yaw = $in->getLFloat();
+		$this->pitch = $in->getLFloat();
+		$this->position = $in->getVector3();
+		$this->moveVecX = $in->getLFloat();
+		$this->moveVecZ = $in->getLFloat();
+		$this->headYaw = $in->getLFloat();
+		$this->inputFlags = $in->getUnsignedVarLong();
+		$this->inputMode = $in->getUnsignedVarInt();
+		$this->playMode = $in->getUnsignedVarInt();
 		if($this->playMode === PlayMode::VR){
-			$this->vrGazeDirection = $this->getVector3();
+			$this->vrGazeDirection = $in->getVector3();
 		}
 	}
 
-	protected function encodePayload() : void{
-		$this->putLFloat($this->yaw);
-		$this->putLFloat($this->pitch);
-		$this->putVector3($this->position);
-		$this->putLFloat($this->moveVecX);
-		$this->putLFloat($this->moveVecZ);
-		$this->putLFloat($this->headYaw);
-		$this->putUnsignedVarLong($this->inputFlags);
-		$this->putUnsignedVarInt($this->inputMode);
-		$this->putUnsignedVarInt($this->playMode);
+	protected function encodePayload(NetworkBinaryStream $out) : void{
+		$out->putLFloat($this->yaw);
+		$out->putLFloat($this->pitch);
+		$out->putVector3($this->position);
+		$out->putLFloat($this->moveVecX);
+		$out->putLFloat($this->moveVecZ);
+		$out->putLFloat($this->headYaw);
+		$out->putUnsignedVarLong($this->inputFlags);
+		$out->putUnsignedVarInt($this->inputMode);
+		$out->putUnsignedVarInt($this->playMode);
 		if($this->playMode === PlayMode::VR){
 			assert($this->vrGazeDirection !== null);
-			$this->putVector3($this->vrGazeDirection);
+			$out->putVector3($this->vrGazeDirection);
 		}
 	}
 

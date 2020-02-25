@@ -58,16 +58,14 @@ class Explosion{
 	public $affectedBlocks = [];
 	/** @var float */
 	public $stepLen = 0.3;
-	/** @var Entity|Block */
+	/** @var Entity|Block|null */
 	private $what;
 
 	/** @var SubChunkIteratorManager */
 	private $subChunkHandler;
 
 	/**
-	 * @param Position     $center
-	 * @param float        $size
-	 * @param Entity|Block $what
+	 * @param Entity|Block|null $what
 	 */
 	public function __construct(Position $center, float $size, $what = null){
 		if(!$center->isValid()){
@@ -86,10 +84,8 @@ class Explosion{
 	}
 
 	/**
-	 * Calculates which blocks will be destroyed by this explosion. If explodeB() is called without calling this, no blocks 
+	 * Calculates which blocks will be destroyed by this explosion. If explodeB() is called without calling this, no blocks
 	 * will be destroyed.
-	 *
-	 * @return bool
 	 */
 	public function explodeA() : bool{
 		if($this->size < 0.1){
@@ -101,7 +97,7 @@ class Explosion{
 		$currentChunk = null;
 		$currentSubChunk = null;
 
-		$mRays = (int) ($this->rays - 1);
+		$mRays = $this->rays - 1;
 		for($i = 0; $i < $this->rays; ++$i){
 			for($j = 0; $j < $this->rays; ++$j){
 				for($k = 0; $k < $this->rays; ++$k){
@@ -152,8 +148,6 @@ class Explosion{
 	/**
 	 * Executes the explosion's effects on the world. This includes destroying blocks (if any), harming and knocking back entities,
 	 * and creating sounds and particles.
-	 *
-	 * @return bool
 	 */
 	public function explodeB() : bool{
 		$send = [];
@@ -208,7 +202,6 @@ class Explosion{
 				$entity->setMotion($motion->multiply($impact));
 			}
 		}
-
 
 		$air = ItemFactory::air();
 		$airBlock = VanillaBlocks::AIR();

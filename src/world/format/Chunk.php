@@ -68,7 +68,10 @@ class Chunk{
 	/** @var bool */
 	protected $terrainPopulated = false;
 
-	/** @var \SplFixedArray|SubChunk[] */
+	/**
+	 * @var \SplFixedArray|SubChunk[]
+	 * @phpstan-var \SplFixedArray<SubChunk>
+	 */
 	protected $subChunks;
 
 	/** @var Tile[] */
@@ -77,7 +80,10 @@ class Chunk{
 	/** @var Entity[] */
 	protected $entities = [];
 
-	/** @var \SplFixedArray|int[] */
+	/**
+	 * @var \SplFixedArray|int[]
+	 * @phpstan-var \SplFixedArray<int>
+	 */
 	protected $heightMap;
 
 	/** @var string */
@@ -90,12 +96,9 @@ class Chunk{
 	protected $NBTentities;
 
 	/**
-	 * @param int           $chunkX
-	 * @param int           $chunkZ
 	 * @param SubChunk[]    $subChunks
 	 * @param CompoundTag[] $entities
 	 * @param CompoundTag[] $tiles
-	 * @param string        $biomeIds
 	 * @param int[]         $heightMap
 	 */
 	public function __construct(int $chunkX, int $chunkZ, array $subChunks = [], ?array $entities = null, ?array $tiles = null, string $biomeIds = "", array $heightMap = []){
@@ -127,16 +130,10 @@ class Chunk{
 		$this->NBTentities = $entities;
 	}
 
-	/**
-	 * @return int
-	 */
 	public function getX() : int{
 		return $this->x;
 	}
 
-	/**
-	 * @return int
-	 */
 	public function getZ() : int{
 		return $this->z;
 	}
@@ -145,17 +142,12 @@ class Chunk{
 		$this->x = $x;
 	}
 
-	/**
-	 * @param int $z
-	 */
 	public function setZ(int $z) : void{
 		$this->z = $z;
 	}
 
 	/**
 	 * Returns the chunk height in count of subchunks.
-	 *
-	 * @return int
 	 */
 	public function getHeight() : int{
 		return $this->subChunks->getSize();
@@ -176,11 +168,6 @@ class Chunk{
 
 	/**
 	 * Sets the blockstate at the given coordinate by internal ID.
-	 *
-	 * @param int $x
-	 * @param int $y
-	 * @param int $z
-	 * @param int $block
 	 */
 	public function setFullBlock(int $x, int $y, int $z, int $block) : void{
 		$this->getSubChunk($y >> 4)->setFullBlock($x, $y & 0xf, $z, $block);
@@ -212,9 +199,6 @@ class Chunk{
 		$this->getSubChunk($y >> 4)->getBlockSkyLightArray()->set($x & 0xf, $y & 0x0f, $z & 0xf, $level);
 	}
 
-	/**
-	 * @param int $level
-	 */
 	public function setAllBlockSkyLight(int $level) : void{
 		for($y = $this->subChunks->count() - 1; $y >= 0; --$y){
 			$this->getSubChunk($y)->setBlockSkyLightArray(LightArray::fill($level));
@@ -246,9 +230,6 @@ class Chunk{
 		$this->getSubChunk($y >> 4)->getBlockLightArray()->set($x & 0xf, $y & 0x0f, $z & 0xf, $level);
 	}
 
-	/**
-	 * @param int $level
-	 */
 	public function setAllBlockLight(int $level) : void{
 		for($y = $this->subChunks->count() - 1; $y >= 0; --$y){
 			$this->getSubChunk($y)->setBlockLightArray(LightArray::fill($level));
@@ -279,8 +260,6 @@ class Chunk{
 	 *
 	 * @param int $x 0-15
 	 * @param int $z 0-15
-	 *
-	 * @return int
 	 */
 	public function getHeightMap(int $x, int $z) : int{
 		return $this->heightMap[($z << 4) | $x];
@@ -291,7 +270,6 @@ class Chunk{
 	 *
 	 * @param int $x 0-15
 	 * @param int $z 0-15
-	 * @param int $value
 	 */
 	public function setHeightMap(int $x, int $z, int $value) : void{
 		$this->heightMap[($z << 4) | $x] = $value;
@@ -317,8 +295,8 @@ class Chunk{
 	 * @return int New calculated heightmap value (0-256 inclusive)
 	 */
 	public function recalculateHeightMapColumn(int $x, int $z) : int{
-		$max = $this->getHighestBlockAt($x, $z);
-		for($y = $max; $y >= 0; --$y){
+		$y = $this->getHighestBlockAt($x, $z);
+		for(; $y >= 0; --$y){
 			if(BlockFactory::$lightFilter[$state = $this->getFullBlock($x, $y, $z)] > 1 or BlockFactory::$diffusesSkyLight[$state]){
 				break;
 			}
@@ -340,19 +318,18 @@ class Chunk{
 
 		for($x = 0; $x < 16; ++$x){
 			for($z = 0; $z < 16; ++$z){
+				$y = ($this->subChunks->count() * 16) - 1;
 				$heightMap = $this->getHeightMap($x, $z);
 
-				for($y = ($this->subChunks->count() * 16) - 1; $y >= $heightMap; --$y){
+				for(; $y >= $heightMap; --$y){
 					$this->setBlockSkyLight($x, $y, $z, 15);
 				}
 
 				$light = 15;
 				for(; $y >= 0; --$y){
-					if($light > 0){
-						$light -= BlockFactory::$lightFilter[$this->getFullBlock($x, $y, $z)];
-						if($light <= 0){
-							break;
-						}
+					$light -= BlockFactory::$lightFilter[$this->getFullBlock($x, $y, $z)];
+					if($light <= 0){
+						break;
 					}
 					$this->setBlockSkyLight($x, $y, $z, $light);
 				}
@@ -384,51 +361,32 @@ class Chunk{
 		$this->dirtyFlags |= self::DIRTY_FLAG_BIOMES;
 	}
 
-	/**
-	 * @return bool
-	 */
 	public function isLightPopulated() : bool{
 		return $this->lightPopulated;
 	}
 
-	/**
-	 * @param bool $value
-	 */
 	public function setLightPopulated(bool $value = true) : void{
 		$this->lightPopulated = $value;
 	}
 
-	/**
-	 * @return bool
-	 */
 	public function isPopulated() : bool{
 		return $this->terrainPopulated;
 	}
 
-	/**
-	 * @param bool $value
-	 */
 	public function setPopulated(bool $value = true) : void{
 		$this->terrainPopulated = $value;
+		$this->dirtyFlags |= self::DIRTY_FLAG_TERRAIN;
 	}
 
-	/**
-	 * @return bool
-	 */
 	public function isGenerated() : bool{
 		return $this->terrainGenerated;
 	}
 
-	/**
-	 * @param bool $value
-	 */
 	public function setGenerated(bool $value = true) : void{
 		$this->terrainGenerated = $value;
+		$this->dirtyFlags |= self::DIRTY_FLAG_TERRAIN;
 	}
 
-	/**
-	 * @param Entity $entity
-	 */
 	public function addEntity(Entity $entity) : void{
 		if($entity->isClosed()){
 			throw new \InvalidArgumentException("Attempted to add a garbage closed Entity to a chunk");
@@ -439,9 +397,6 @@ class Chunk{
 		}
 	}
 
-	/**
-	 * @param Entity $entity
-	 */
 	public function removeEntity(Entity $entity) : void{
 		unset($this->entities[$entity->getId()]);
 		if(!($entity instanceof Player)){
@@ -449,9 +404,6 @@ class Chunk{
 		}
 	}
 
-	/**
-	 * @param Tile $tile
-	 */
 	public function addTile(Tile $tile) : void{
 		if($tile->isClosed()){
 			throw new \InvalidArgumentException("Attempted to add a garbage closed Tile to a chunk");
@@ -465,9 +417,6 @@ class Chunk{
 		$this->dirtyFlags |= self::DIRTY_FLAG_TILES;
 	}
 
-	/**
-	 * @param Tile $tile
-	 */
 	public function removeTile(Tile $tile) : void{
 		$pos = $tile->getPos();
 		unset($this->tiles[Chunk::blockHash($pos->x, $pos->y, $pos->z)]);
@@ -503,8 +452,6 @@ class Chunk{
 	 * @param int $x 0-15
 	 * @param int $y
 	 * @param int $z 0-15
-	 *
-	 * @return Tile|null
 	 */
 	public function getTile(int $x, int $y, int $z) : ?Tile{
 		return $this->tiles[Chunk::blockHash($x, $y, $z)] ?? null;
@@ -542,25 +489,21 @@ class Chunk{
 
 	/**
 	 * Deserializes tiles and entities from NBT
-	 *
-	 * @param World $world
 	 */
 	public function initChunk(World $world) : void{
 		if($this->NBTentities !== null){
 			$this->dirtyFlags |= self::DIRTY_FLAG_ENTITIES;
 			$world->timings->syncChunkLoadEntitiesTimer->startTiming();
 			foreach($this->NBTentities as $nbt){
-				if($nbt instanceof CompoundTag){
-					try{
-						$entity = EntityFactory::createFromData($world, $nbt);
-						if(!($entity instanceof Entity)){
-							$world->getLogger()->warning("Chunk $this->x $this->z: Deleted unknown entity type " . $nbt->getString("id", $nbt->getString("identifier", "<unknown>", true), true));
-							continue;
-						}
-					}catch(\Exception $t){ //TODO: this shouldn't be here
-						$world->getLogger()->logException($t);
+				try{
+					$entity = EntityFactory::createFromData($world, $nbt);
+					if(!($entity instanceof Entity)){
+						$world->getLogger()->warning("Chunk $this->x $this->z: Deleted unknown entity type " . $nbt->getString("id", $nbt->getString("identifier", "<unknown>", true), true));
 						continue;
 					}
+				}catch(\Exception $t){ //TODO: this shouldn't be here
+					$world->getLogger()->logException($t);
+					continue;
 				}
 			}
 
@@ -571,13 +514,11 @@ class Chunk{
 			$this->dirtyFlags |= self::DIRTY_FLAG_TILES;
 			$world->timings->syncChunkLoadTileEntitiesTimer->startTiming();
 			foreach($this->NBTtiles as $nbt){
-				if($nbt instanceof CompoundTag){
-					if(($tile = TileFactory::createFromData($world, $nbt)) !== null){
-						$world->addTile($tile);
-					}else{
-						$world->getLogger()->warning("Chunk $this->x $this->z: Deleted unknown tile entity type " . $nbt->getString("id", "<unknown>", true));
-						continue;
-					}
+				if(($tile = TileFactory::createFromData($world, $nbt)) !== null){
+					$world->addTile($tile);
+				}else{
+					$world->getLogger()->warning("Chunk $this->x $this->z: Deleted unknown tile entity type " . $nbt->getString("id", "<unknown>", true));
+					continue;
 				}
 			}
 
@@ -586,9 +527,6 @@ class Chunk{
 		}
 	}
 
-	/**
-	 * @return string
-	 */
 	public function getBiomeIdArray() : string{
 		return $this->biomeIds;
 	}
@@ -611,20 +549,14 @@ class Chunk{
 		$this->heightMap = \SplFixedArray::fromArray($values);
 	}
 
-	/**
-	 * @return bool
-	 */
 	public function isDirty() : bool{
-		return $this->dirtyFlags !== 0 or !empty($this->tiles) or !empty($this->getSavableEntities());
+		return $this->dirtyFlags !== 0 or count($this->tiles) > 0 or count($this->getSavableEntities()) > 0;
 	}
 
 	public function getDirtyFlag(int $flag) : bool{
 		return ($this->dirtyFlags & $flag) !== 0;
 	}
 
-	/**
-	 * @return int
-	 */
 	public function getDirtyFlags() : int{
 		return $this->dirtyFlags;
 	}
@@ -647,10 +579,6 @@ class Chunk{
 
 	/**
 	 * Returns the subchunk at the specified subchunk Y coordinate, or an empty, unmodifiable stub if it does not exist or the coordinate is out of range.
-	 *
-	 * @param int $y
-	 *
-	 * @return SubChunkInterface
 	 */
 	public function getSubChunk(int $y) : SubChunkInterface{
 		if($y < 0 or $y >= $this->subChunks->getSize()){
@@ -662,9 +590,6 @@ class Chunk{
 
 	/**
 	 * Sets a subchunk in the chunk index
-	 *
-	 * @param int           $y
-	 * @param SubChunk|null $subChunk
 	 */
 	public function setSubChunk(int $y, ?SubChunk $subChunk) : void{
 		if($y < 0 or $y >= $this->subChunks->getSize()){
@@ -677,6 +602,7 @@ class Chunk{
 
 	/**
 	 * @return \SplFixedArray|SubChunk[]
+	 * @phpstan-return \SplFixedArray<SubChunk>
 	 */
 	public function getSubChunks() : \SplFixedArray{
 		return $this->subChunks;
@@ -697,8 +623,6 @@ class Chunk{
 	 * @param int $x 0-15
 	 * @param int $y
 	 * @param int $z 0-15
-	 *
-	 * @return int
 	 */
 	public static function blockHash(int $x, int $y, int $z) : int{
 		return ($y << 8) | (($z & 0x0f) << 4) | ($x & 0x0f);

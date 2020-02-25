@@ -27,6 +27,7 @@ namespace pocketmine\network\mcpe\protocol;
 
 use pocketmine\network\mcpe\handler\PacketHandler;
 use pocketmine\network\mcpe\protocol\types\SkinData;
+use pocketmine\network\mcpe\serializer\NetworkBinaryStream;
 use pocketmine\utils\UUID;
 
 class PlayerSkinPacket extends DataPacket implements ClientboundPacket, ServerboundPacket{
@@ -41,18 +42,18 @@ class PlayerSkinPacket extends DataPacket implements ClientboundPacket, Serverbo
 	/** @var SkinData */
 	public $skin;
 
-	protected function decodePayload() : void{
-		$this->uuid = $this->getUUID();
-		$this->skin = $this->getSkin();
-		$this->newSkinName = $this->getString();
-		$this->oldSkinName = $this->getString();
+	protected function decodePayload(NetworkBinaryStream $in) : void{
+		$this->uuid = $in->getUUID();
+		$this->skin = $in->getSkin();
+		$this->newSkinName = $in->getString();
+		$this->oldSkinName = $in->getString();
 	}
 
-	protected function encodePayload() : void{
-		$this->putUUID($this->uuid);
-		$this->putSkin($this->skin);
-		$this->putString($this->newSkinName);
-		$this->putString($this->oldSkinName);
+	protected function encodePayload(NetworkBinaryStream $out) : void{
+		$out->putUUID($this->uuid);
+		$out->putSkin($this->skin);
+		$out->putString($this->newSkinName);
+		$out->putString($this->oldSkinName);
 	}
 
 	public function handle(PacketHandler $handler) : bool{

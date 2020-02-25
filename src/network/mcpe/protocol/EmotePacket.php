@@ -26,6 +26,7 @@ namespace pocketmine\network\mcpe\protocol;
 #include <rules/DataPacket.h>
 
 use pocketmine\network\mcpe\handler\PacketHandler;
+use pocketmine\network\mcpe\serializer\NetworkBinaryStream;
 
 class EmotePacket extends DataPacket implements ClientboundPacket, ServerboundPacket{
 	public const NETWORK_ID = ProtocolInfo::EMOTE_PACKET;
@@ -49,7 +50,6 @@ class EmotePacket extends DataPacket implements ClientboundPacket, ServerboundPa
 
 	/**
 	 * TODO: we can't call this getEntityRuntimeId() because of base class collision (crap architecture, thanks Shoghi)
-	 * @return int
 	 */
 	public function getEntityRuntimeIdField() : int{
 		return $this->entityRuntimeId;
@@ -63,16 +63,16 @@ class EmotePacket extends DataPacket implements ClientboundPacket, ServerboundPa
 		return $this->flags;
 	}
 
-	protected function decodePayload() : void{
-		$this->entityRuntimeId = $this->getEntityRuntimeId();
-		$this->emoteId = $this->getString();
-		$this->flags = $this->getByte();
+	protected function decodePayload(NetworkBinaryStream $in) : void{
+		$this->entityRuntimeId = $in->getEntityRuntimeId();
+		$this->emoteId = $in->getString();
+		$this->flags = $in->getByte();
 	}
 
-	protected function encodePayload() : void{
-		$this->putEntityRuntimeId($this->entityRuntimeId);
-		$this->putString($this->emoteId);
-		$this->putByte($this->flags);
+	protected function encodePayload(NetworkBinaryStream $out) : void{
+		$out->putEntityRuntimeId($this->entityRuntimeId);
+		$out->putString($this->emoteId);
+		$out->putByte($this->flags);
 	}
 
 	public function handle(PacketHandler $handler) : bool{

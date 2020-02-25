@@ -55,7 +55,9 @@ class CommandReader extends Thread{
 
 	/** @var \Threaded */
 	protected $buffer;
+	/** @var bool */
 	private $shutdown = false;
+	/** @var int */
 	private $type = self::TYPE_STREAM;
 
 	/** @var SleeperNotifier|null */
@@ -112,8 +114,6 @@ class CommandReader extends Thread{
 	 * Checks if the specified stream is a FIFO pipe.
 	 *
 	 * @param resource $stream
-	 *
-	 * @return bool
 	 */
 	private function isPipe($stream) : bool{
 		return is_resource($stream) and (!stream_isatty($stream) or ((fstat($stream)["mode"] & 0170000) === 0010000));
@@ -152,7 +152,7 @@ class CommandReader extends Thread{
 				case self::TYPE_PIPED:
 					if(($raw = fgets(self::$stdin)) === false){ //broken pipe or EOF
 						$this->initStdin();
-						$this->synchronized(function(){
+						$this->synchronized(function() : void{
 							$this->wait(200000);
 						}); //prevent CPU waste if it's end of pipe
 						return true; //loop back round
@@ -175,8 +175,6 @@ class CommandReader extends Thread{
 
 	/**
 	 * Reads a line from console, if available. Returns null if not available
-	 *
-	 * @return string|null
 	 */
 	public function getLine() : ?string{
 		if($this->buffer->count() !== 0){

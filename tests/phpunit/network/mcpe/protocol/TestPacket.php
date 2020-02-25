@@ -21,38 +21,23 @@
 
 declare(strict_types=1);
 
-namespace pocketmine\lang;
+namespace pocketmine\network\mcpe\protocol;
 
-class TextContainer{
+use pocketmine\network\mcpe\handler\PacketHandler;
+use pocketmine\network\mcpe\serializer\NetworkBinaryStream;
 
-	/** @var string $text */
-	protected $text;
+class TestPacket extends DataPacket{
+	public const NETWORK_ID = 1023;
 
-	/**
-	 * @param string $text
-	 */
-	public function __construct(string $text){
-		$this->text = $text;
+	protected function decodePayload(NetworkBinaryStream $in) : void{
+
 	}
 
-	/**
-	 * @param string $text
-	 */
-	public function setText(string $text) : void{
-		$this->text = $text;
+	protected function encodePayload(NetworkBinaryStream $out) : void{
+
 	}
 
-	/**
-	 * @return string
-	 */
-	public function getText() : string{
-		return $this->text;
-	}
-
-	/**
-	 * @return string
-	 */
-	public function __toString() : string{
-		return $this->getText();
+	public function handle(PacketHandler $handler) : bool{
+		return false;
 	}
 }
